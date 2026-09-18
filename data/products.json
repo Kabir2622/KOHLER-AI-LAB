@@ -1,0 +1,186 @@
+{
+  "faucets": [
+    {
+      "id": "FCT-MOD-01",
+      "name": "Purist Cylindrical Monobloc",
+      "price": 540,
+      "style": "Minimalist Modern",
+      "finish": "Matte Black",
+      "flow_rate": "1.2 GPM",
+      "footprint_in": { "width": 8, "depth": 6 },
+      "image_url": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=700&q=80",
+      "features": ["Ceramic disc valving", "Solid brass casting", "Laminar flow"]
+    },
+    {
+      "id": "FCT-ZEN-01",
+      "name": "Kallista Bamboo Flow Spout",
+      "price": 1450,
+      "style": "Japanese Zen",
+      "finish": "Brushed French Gold",
+      "flow_rate": "1.0 GPM",
+      "footprint_in": { "width": 8, "depth": 7 },
+      "image_url": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=700&q=80",
+      "features": ["Open-trough waterfall channel", "PVD unlacquered finish", "Whisper-quiet aerator"]
+    },
+    {
+      "id": "FCT-LUX-01",
+      "name": "Artifacts Heritage Gooseneck",
+      "price": 980,
+      "style": "Classic Luxury",
+      "finish": "Polished Nickel",
+      "flow_rate": "1.5 GPM",
+      "footprint_in": { "width": 9, "depth": 8 },
+      "image_url": "https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=700&q=80",
+      "features": ["Dual lever cross handles", "High-arch spout clearance", "Corrosion barrier"]
+    },
+    {
+      "id": "FCT-IND-01",
+      "name": "Composed Knurled Industrial Mixer",
+      "price": 760,
+      "style": "Industrial Chic",
+      "finish": "Titanium Carbon",
+      "flow_rate": "1.2 GPM",
+      "footprint_in": { "width": 7, "depth": 6 },
+      "image_url": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=700&q=80",
+      "features": ["Diamond knurled handles", "Raw architectural silhouette", "Quick-mount stem"]
+    }
+  ],
+  "toilets": [
+    {
+      "id": "TLT-MOD-01",
+      "name": "Cimarron Comfort Elongated",
+      "price": 420,
+      "style": "Minimalist Modern",
+      "finish": "White Vitreous China",
+      "flow_rate": "1.28 GPF",
+      "footprint_in": { "width": 18, "depth": 29 },
+      "image_url": "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&w=700&q=80",
+      "features": ["AquaPiston canister flush", "Quiet-Close lid", "Skirted trapway"]
+    },
+    {
+      "id": "TLT-ZEN-01",
+      "name": "Veil Intelligent Suspended Bidet",
+      "price": 3800,
+      "style": "Japanese Zen",
+      "finish": "Honed Matte White",
+      "flow_rate": "0.8 / 1.0 GPF Dual",
+      "footprint_in": { "width": 16, "depth": 22 },
+      "image_url": "https://images.unsplash.com/photo-1564540586988-aa4e53c3d799?auto=format&fit=crop&w=700&q=80",
+      "features": ["UV-sanitized heated wand", "Integrated bidet seat", "Automated proximity lid", "Warm air dryer"]
+    },
+    {
+      "id": "TLT-LUX-01",
+      "name": "Memoirs Stately Architectural Suite",
+      "price": 780,
+      "style": "Classic Luxury",
+      "finish": "Gloss White & Cast Brass Trim",
+      "flow_rate": "1.28 GPF",
+      "footprint_in": { "width": 19, "depth": 30 },
+      "image_url": "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&w=700&q=80",
+      "features": ["Traditional crown trim lid", "Solid brass flush trip lever", "High-efficiency siphon"]
+    },
+    {
+      "id": "TLT-IND-01",
+      "name": "Reach In-Wall Compact Carrier",
+      "price": 890,
+      "style": "Industrial Chic",
+      "finish": "Gloss Black Ceramic",
+      "flow_rate": "1.1 GPF",
+      "footprint_in": { "width": 15, "depth": 21 },
+      "image_url": "https://images.unsplash.com/photo-1564540586988-aa4e53c3d799?auto=format&fit=crop&w=700&q=80",
+      "features": ["Concealed steel tank frame", "Matte actuator plate", "Suspended floor clearance"]
+    }
+  ],
+  "showers": [
+    {
+      "id": "SHW-MOD-01",
+      "name": "Awaken Clean Geometric Enclosure",
+      "price": 850,
+      "style": "Minimalist Modern",
+      "finish": "Matte Black",
+      "flow_rate": "1.75 GPM",
+      "footprint_in": { "width": 36, "depth": 48 },
+      "image_url": "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=700&q=80",
+      "features": ["Frameless 3/8-inch glass", "3-function spray wand", "Hydrophobic glass coating"]
+    },
+    {
+      "id": "SHW-ZEN-01",
+      "name": "DTV Prompt Ambient Ceiling Rainhead",
+      "price": 2800,
+      "style": "Japanese Zen",
+      "finish": "Brushed Bronze",
+      "flow_rate": "1.8 GPM",
+      "footprint_in": { "width": 42, "depth": 48 },
+      "image_url": "https://images.unsplash.com/photo-1540518614846-7ede433c4ef9?auto=format&fit=crop&w=700&q=80",
+      "features": ["Flush ceiling deluge grid", "Micro-droplet mist mode", "Digital thermostatic preset"]
+    },
+    {
+      "id": "SHW-LUX-01",
+      "name": "Artifacts Heritage Thermostatic Column",
+      "price": 2100,
+      "style": "Classic Luxury",
+      "finish": "Vibrant Polished Brass",
+      "flow_rate": "2.0 GPM",
+      "footprint_in": { "width": 40, "depth": 40 },
+      "image_url": "https://images.unsplash.com/photo-1540518614846-7ede433c4ef9?auto=format&fit=crop&w=700&q=80",
+      "features": ["12-inch deluge head", "Handheld phone wand", "Anti-scald wax cartridge"]
+    },
+    {
+      "id": "SHW-IND-01",
+      "name": "Purist Industrial Exposed Pipe System",
+      "price": 1350,
+      "style": "Industrial Chic",
+      "finish": "Raw Gunmetal",
+      "flow_rate": "1.75 GPM",
+      "footprint_in": { "width": 36, "depth": 42 },
+      "image_url": "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=700&q=80",
+      "features": ["Exposed industrial riser riser", "Tactile cross-handle diverter", "Solid cast junctions"]
+    }
+  ],
+  "vanities": [
+    {
+      "id": "VAN-MOD-01",
+      "name": "Jute Floating Matte Console",
+      "price": 1100,
+      "style": "Minimalist Modern",
+      "finish": "Smoked Charcoal & Quartz",
+      "flow_rate": "N/A",
+      "footprint_in": { "width": 36, "depth": 22 },
+      "image_url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=700&q=80",
+      "features": ["Cantilever wall suspension", "Push-touch silent glides", "Seamless under-mount sink"]
+    },
+    {
+      "id": "VAN-ZEN-01",
+      "name": "Tsu Hinoki Fluted Wood Console",
+      "price": 3100,
+      "style": "Japanese Zen",
+      "finish": "Natural Cedar & Basalt Stone",
+      "flow_rate": "N/A",
+      "footprint_in": { "width": 48, "depth": 22 },
+      "image_url": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=700&q=80",
+      "features": ["Sustainably harvested cedar", "Carved volcanic rock vessel basin", "Concealed finger-pull joinery"]
+    },
+    {
+      "id": "VAN-LUX-01",
+      "name": "Damask Ornate Double Basin Suite",
+      "price": 2650,
+      "style": "Classic Luxury",
+      "finish": "Carrara Marble & Fluted Walnut",
+      "flow_rate": "N/A",
+      "footprint_in": { "width": 60, "depth": 24 },
+      "image_url": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=700&q=80",
+      "features": ["Bookmatched Italian marble counter", "Double under-mount glazed bowls", "Solid walnut dovetail frames"]
+    },
+    {
+      "id": "VAN-IND-01",
+      "name": "Foundry Cast Iron Frame Vanity",
+      "price": 1400,
+      "style": "Industrial Chic",
+      "finish": "Blackened Steel & Reclaimed Teak",
+      "flow_rate": "N/A",
+      "footprint_in": { "width": 40, "depth": 22 },
+      "image_url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=700&q=80",
+      "features": ["Welded steel tubular frame", "Integrated towel bar rail", "Open slatted bottom shelf"]
+    }
+  ]
+}

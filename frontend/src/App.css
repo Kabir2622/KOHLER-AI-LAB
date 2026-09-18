@@ -1,0 +1,279 @@
+/* Layout & Container */
+.app-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #f8fafc;
+}
+
+/* Header */
+.app-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #243044;
+  padding-bottom: 1.25rem;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+}
+
+.app-header p {
+  color: #94a3b8;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+/* Parameter Configuration Form */
+.config-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  background: #151d2a;
+  border: 1px solid #243044;
+  padding: 1.75rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #cbd5e1;
+}
+
+.form-group input[type="range"] {
+  accent-color: #c5a059;
+  cursor: pointer;
+  margin-top: 0.4rem;
+}
+
+.form-group input[type="number"],
+.form-group select {
+  background-color: #0d1420;
+  color: #f8fafc;
+  border: 1px solid #243044;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input[type="number"]:focus,
+.form-group select:focus {
+  border-color: #c5a059;
+}
+
+.form-submit-group {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+.btn-generate {
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(135deg, #c5a059, #99732d);
+  color: #0b0f17;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.btn-generate:hover:not(:disabled) {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.btn-generate:disabled {
+  background: #334155;
+  color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Alerts */
+.error-banner {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background-color: #3b1219;
+  border: 1px solid #7f1d1d;
+  color: #fca5a5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+/* Results Grid */
+.results-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.results-grid h2 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #f8fafc;
+}
+
+.price-tag {
+  font-size: 1.1rem;
+  color: #94a3b8;
+  margin-bottom: 1.25rem;
+}
+
+.price-tag strong {
+  color: #c5a059;
+  font-size: 1.25rem;
+}
+
+/* Card Blocks */
+.card-panel {
+  background: #151d2a;
+  border: 1px solid #243044;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.card-panel h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.fixture-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.fixture-item {
+  background: #0d1420;
+  border: 1px solid #1e293b;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.fixture-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fixture-id {
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.rationale-panel {
+  background: #0f1c2e;
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.rationale-panel h4 {
+  margin: 0 0 0.5rem 0;
+  color: #60a5fa;
+  font-size: 0.95rem;
+}
+
+.rationale-panel p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+}
+
+/* 2D Canvas Room View */
+.spatial-canvas {
+  width: 100%;
+  height: 320px;
+  background-color: #0d1420;
+  border: 2px dashed #243044;
+  border-radius: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.room-dimensions-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.04em;
+  background: #151d2a;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #243044;
+}
+
+.fixture-box {
+  position: absolute;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.fixture-box.vanity {
+  top: 18%;
+  left: 12%;
+  background: #2563eb;
+  color: #eff6ff;
+  border: 1px solid #3b82f6;
+}
+
+.fixture-box.toilet {
+  bottom: 18%;
+  left: 12%;
+  background: #059669;
+  color: #ecfdf5;
+  border: 1px solid #10b981;
+}
+
+.fixture-box.shower {
+  top: 18%;
+  right: 12%;
+  bottom: 18%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #7c3aed;
+  color: #f5f3ff;
+  border: 1px solid #8b5cf6;
+}

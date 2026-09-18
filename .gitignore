@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Node (in case frontend uses it)
+node_modules/
+dist/
+.env.local
