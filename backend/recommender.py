@@ -1,7 +1,6 @@
 """
-LLM Reasoning Layer (Gemini version, current SDK)
-Takes constraint-filtered candidates (from constraint_filter) and prompts
-Gemini to curate a style-matched bundle, with budget-aware fallback protection.
+Multi-Tier LLM & Deterministic Recommender Layer
+Generates 3 distinct bundles (Essential, Curated, Luxury) with different valuations.
 """
 
 import os
@@ -14,133 +13,146 @@ from google.genai import types
 
 logger = logging.getLogger("kohler_backend")
 
-# Find and load the .env file in the backend directory
 env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-SYSTEM_PROMPT = """You are a master bathroom design director for Kohler.
-You will receive room constraints, a budget allocation, and candidate fixtures
-(faucets, toilets, showers, vanities) pre-filtered for physical and budgetary fit.
+SYSTEM_PROMPT = """You are a senior Kohler architectural design director.
+Given candidate fixtures, room constraints, and target budget, you MUST generate THREE distinct design tiers with DIFFERENT products and valuations:
 
-Your directives:
-1. Pick exactly ONE product from each category that aligns with the requested
-   design aesthetic and utilizes the allocated budget appropriately.
-   - For premium budgets (e.g. $6,000+), prefer flagship and luxury-tier fixtures.
-   - For conservative budgets, select clean value-engineered combinations.
-2. Ensure finish and sculptural cohesion across all 4 fixtures.
-3. Prioritize ecological WaterSense ratings when multiple items fit equally well.
-4. Write an architectural 2-3 sentence rationale highlighting material finishes,
-   flow rates, and spatial balance.
+1. "essential": Economical, value-engineered products (~50-65% of budget). Pick the most cost-effective fixtures.
+2. "curated": Balanced mid-range fixtures (~85-100% of budget) matching the customer's exact budget target.
+3. "signature": Top-tier luxury or smart fixtures (~125-150% of budget) with smart bidet toilets, thermostatic showers, or large quartz vanities.
 
-Return ONLY valid JSON matching this schema:
+MANDATORY RULES:
+- The three tiers MUST contain DIFFERENT products where possible.
+- essential total_price < curated total_price < signature total_price. They MUST NEVER be equal.
+
+Output strictly valid JSON matching this schema:
 {
-  "bundle": {
-    "faucet": "<product id>",
-    "toilet": "<product id>",
-    "shower": "<product id>",
-    "vanity": "<product id>"
-  },
-  "total_price": <number>,
-  "explanation": "<your 2-3 sentence architectural explanation>"
+  "tiers": {
+    "essential": {
+      "title": "Essential Architectural Tier",
+      "bundle": {"faucet": "<id>", "toilet": "<id>", "shower": "<id>", "vanity": "<id>"},
+      "total_price": <number>,
+      "explanation": "<rationale>"
+    },
+    "curated": {
+      "title": "Curated Designer Tier",
+      "bundle": {"faucet": "<id>", "toilet": "<id>", "shower": "<id>", "vanity": "<id>"},
+      "total_price": <number>,
+      "explanation": "<rationale>"
+    },
+    "signature": {
+      "title": "Signature Luxury Tier",
+      "bundle": {"faucet": "<id>", "toilet": "<id>", "shower": "<id>", "vanity": "<id>"},
+      "total_price": <number>,
+      "explanation": "<rationale>"
+    }
+  }
 }
 """
 
-
 def get_client() -> genai.Client:
-    """Lazily instantiate the Gemini client so import never crashes."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError(
-            f"GEMINI_API_KEY not found or empty in {env_path}. "
-            "Please check your backend/.env file."
-        )
+        raise ValueError("GEMINI_API_KEY missing in .env")
     return genai.Client(api_key=api_key)
 
 
-def get_fallback_recommendation(candidates: dict, style: str, budget: float = 3000) -> dict:
-    """Dynamic, budget-aware fallback when Gemini is rate-limited, cooling down, or offline."""
-    logger.warning(f"Triggering smart catalog fallback for style='{style}' and budget=${budget}.")
-
-    bundle = {}
-    total_price = 0
-    cat_keys = ["faucets", "toilets", "showers", "vanities"]
+def build_single_bundle(candidates: dict, style: str, target_budget: float, tier_label: str) -> dict:
+    """Deterministic selection that forces different price percentiles per tier."""
     singular_map = {"faucets": "faucet", "toilets": "toilet", "showers": "shower", "vanities": "vanity"}
+    bundle = {}
+    total = 0
 
-    for cat_key in cat_keys:
+    allocations = {
+        "vanities": target_budget * 0.45,
+        "showers": target_budget * 0.25,
+        "toilets": target_budget * 0.20,
+        "faucets": target_budget * 0.10
+    }
+
+    for cat_key, cat_target in allocations.items():
         items = candidates.get(cat_key, [])
         if not items:
             continue
 
-        # 1. Filter fixtures matching the target style
-        style_matches = [
-            item for item in items 
-            if item.get("style", "").strip().lower() == style.strip().lower()
-        ]
-        pool = style_matches if style_matches else items
+        # Sort all candidates by price ascending
+        sorted_by_price = sorted(items, key=lambda x: x.get("price", 0))
 
-        # 2. Select product tier based on budget allocation
-        if budget >= 7000:
-            picked = max(pool, key=lambda x: x.get("price", 0))
-        elif budget <= 2500:
-            picked = min(pool, key=lambda x: x.get("price", 0))
+        # Check for style preference
+        style_matches = [i for i in sorted_by_price if i.get("style", "").lower() == style.lower()]
+        pool = style_matches if len(style_matches) >= 3 else sorted_by_price
+
+        if tier_label == "essential":
+            # Select from the lower 25% price bracket
+            chosen = pool[0]
+        elif tier_label == "signature":
+            # Select from the top tier of the catalog
+            chosen = pool[-1]
         else:
-            sorted_pool = sorted(pool, key=lambda x: x.get("price", 0))
-            picked = sorted_pool[len(sorted_pool) // 2]
+            # Curated tier: Select closest to the allocated category target
+            chosen = min(pool, key=lambda x: abs(x.get("price", 0) - cat_target))
 
-        bundle[singular_map[cat_key]] = picked["id"]
-        total_price += picked.get("price", 0)
+        bundle[singular_map[cat_key]] = chosen["id"]
+        total += chosen.get("price", 0)
 
     return {
         "bundle": bundle,
-        "total_price": total_price,
-        "explanation": (
-            f"Curated {style} architectural suite tailored to a ${budget:,.0f} budget. "
-            "The ensemble balances proportional footprint clearances with WaterSense-compliant "
-            "flow optimization and harmonized material finishes."
-        )
+        "total_price": total,
+        "explanation": f"{tier_label.title()} collection harmonized in {style} aesthetic."
+    }
+
+
+def get_fallback_recommendation(candidates: dict, style: str, budget: float = 3000) -> dict:
+    logger.warning(f"Using deterministic 3-tier fallback engine for budget=${budget}, style='{style}'")
+    return {
+        "tiers": {
+            "essential": {
+                "title": "Essential Architectural Tier",
+                **build_single_bundle(candidates, style, budget * 0.60, "essential")
+            },
+            "curated": {
+                "title": "Curated Designer Tier",
+                **build_single_bundle(candidates, style, budget * 1.00, "curated")
+            },
+            "signature": {
+                "title": "Signature Luxury Tier",
+                **build_single_bundle(candidates, style, budget * 1.50, "signature")
+            }
+        }
     }
 
 
 def get_llm_recommendation(filtered_candidates: dict, style: str, budget: float = 3000) -> dict:
-    """
-    Returns the parsed JSON dict from Gemini, or smoothly falls back
-    to an intelligent style/budget-tier match if throttled or unavailable.
-    """
-    empty_categories = [cat for cat, items in filtered_candidates.items() if not items]
-    if empty_categories:
-        return {
-            "error": f"No products fit the budget/room size in: {', '.join(empty_categories)}. "
-                     f"Try increasing the budget or room dimensions."
-        }
+    empty = [c for c, items in filtered_candidates.items() if not items]
+    if empty:
+        return {"error": f"No products fit dimensions/budget in: {', '.join(empty)}"}
 
     try:
         client = get_client()
-    except Exception as e:
-        logger.warning(f"Gemini client initialization failed ({e}). Defaulting to smart fallback.")
-        return get_fallback_recommendation(filtered_candidates, style, budget)
-
-    user_message = f"""
-Target Aesthetic: {style}
-Budget Allocation: ${budget}
-
-Candidate Products (already filtered for physical room fit and budget cap):
-{json.dumps(filtered_candidates, indent=2)}
-"""
-
-    try:
-        response = client.models.generate_content(
+        msg = f"Aesthetic: {style}\nTarget Budget: ${budget}\nCandidates:\n{json.dumps(filtered_candidates, indent=2)}"
+        res = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=user_message,
+            contents=msg,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
                 response_mime_type="application/json"
             )
         )
+        data = json.loads(res.text.strip())
+        
+        # Verify valid tier output with non-equal totals
+        tiers = data.get("tiers", {})
+        if (
+            "essential" in tiers and "curated" in tiers and "signature" in tiers
+            and tiers["essential"]["total_price"] != tiers["signature"]["total_price"]
+        ):
+            return data
 
-        raw_text = response.text.strip()
-        return json.loads(raw_text)
+        logger.warning("Gemini produced equal tier prices. Falling back to deterministic ladder.")
+        return get_fallback_recommendation(filtered_candidates, style, budget)
 
     except Exception as e:
-        err_msg = str(e)
-        logger.error(f"Gemini API Exception ({err_msg}). Engaging smart rule-based curation.")
-        return get_fallback_recommendation(filtered_candidates, style, budget)  
+        logger.error(f"Gemini API error ({e}). Using deterministic 3-tier fallback.")
+        return get_fallback_recommendation(filtered_candidates, style, budget)
