@@ -1,3 +1,7 @@
+MY LIVE DEMO LINK
+https://drive.google.com/drive/folders/1pq6k7VXzan4n5HdzqanOrzKdS3LXD2Q1?usp=sharing
+
+
 # Kohler AI Bathroom Designer & Planner
 
 Individual case study for the Kohler AI Lab program (Track 1).
