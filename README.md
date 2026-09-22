@@ -2,9 +2,9 @@ MY LIVE DEMO LINK
 https://drive.google.com/drive/folders/1pq6k7VXzan4n5HdzqanOrzKdS3LXD2Q1?usp=sharing
 
 
-# Kohler AI Bathroom Designer & Planner
+# AI Bathroom Designer & Planner
 
-Individual case study for the Kohler AI Lab program (Track 1).
+Individual case study for the AI Lab program (Track 1).
 
 An interactive AI design assistant that takes a customer's bathroom
 dimensions, budget, and aesthetic style, and recommends an optimized
