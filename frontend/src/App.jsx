@@ -62,7 +62,7 @@ export default function App() {
   const bgImageRef = useRef(null);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/api/catalog')
+    fetch(`${import.meta.env.VITE_API_URL}/api/catalog`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -79,7 +79,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Only initialize smooth scrolling and global listeners after splash is dismissed or generally
     const lenis = new Lenis({
       duration: 1.0,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -164,7 +163,7 @@ export default function App() {
     };
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/recommend', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -202,7 +201,7 @@ export default function App() {
         depth: Number(depth)
       };
 
-      const response = await fetch('http://127.0.0.1:5000/api/refine', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/refine`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -265,13 +264,11 @@ export default function App() {
     <>
       {showSplash && <IntroSplash onEnter={handleEnterStudio} />}
 
-      {/* Main Studio content only mounts or activates after intro */}
       {!showSplash && (
         <div style={{ animation: 'fadeIn 0.8s ease forwards' }}>
           <div className="custom-cursor" ref={cursorRef} />
           <div className="grain-overlay" />
 
-          {/* Atmospheric Architectural Backdrop */}
           <div className="luxury-backdrop">
             <img 
               ref={bgImageRef}
@@ -282,7 +279,6 @@ export default function App() {
             <div className="luxury-backdrop-overlay" />
           </div>
 
-          {/* Global Top Bar */}
           <nav style={{ position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid var(--hairline)', background: 'rgba(7, 7, 7, 0.94)', backdropFilter: 'blur(10px)', padding: '0.9rem 2.5rem' }}>
             <div style={{ maxWidth: '1480px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -314,7 +310,6 @@ export default function App() {
 
           <div style={{ position: 'relative', zIndex: 1, maxWidth: '1480px', margin: '0 auto', padding: '3.5rem 2.5rem' }}>
             
-            {/* Editorial Title Block */}
             <header id="studio-section" style={{ marginBottom: '3.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '2rem', borderBottom: '1px solid var(--hairline)', paddingBottom: '2.5rem' }}>
                 <div>
@@ -333,13 +328,10 @@ export default function App() {
               </div>
             </header>
 
-            {/* Commerce-UI Split Studio */}
             <div style={{ display: 'grid', gridTemplateColumns: '580px 1fr', gap: '2.5rem', alignItems: 'start', marginBottom: '7rem' }}>
               
-              {/* Left Column: Parameters & Synthesis */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                 
-                {/* Control Console Plate */}
                 <form 
                   onSubmit={handleGenerate}
                   style={{
@@ -360,7 +352,6 @@ export default function App() {
                     </span>
                   </div>
 
-                  {/* Clean Width & Length Sliders */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.55rem' }}>
@@ -462,11 +453,9 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Results Section */}
                 {result && (
                   <div ref={resultsContainerRef} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                     
-                    {/* 4-Tier Commerce Tab Plate */}
                     {result.tiers && (
                       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${result.tiers.copilot ? 4 : 3}, 1fr)`, gap: '1px', background: 'var(--hairline)', border: '1px solid var(--hairline)' }}>
                         {[
@@ -504,7 +493,6 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* Valuation & PDF Export Bar */}
                     <div className="stagger-card" style={{ background: 'var(--bg-surface)', border: '1px solid var(--hairline)', padding: '1.5rem 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span className="font-mono" style={{ fontSize: '0.68rem', color: 'var(--text-dim)', letterSpacing: '0.16em', textTransform: 'uppercase', display: 'block' }}>
@@ -534,7 +522,6 @@ export default function App() {
                       </button>
                     </div>
 
-                    {/* Prominent Architectural Copilot Console */}
                     <form
                       onSubmit={handleApplyCopilotRevision}
                       className="stagger-card"
@@ -618,7 +605,6 @@ export default function App() {
                       </div>
                     </form>
 
-                    {/* Rationale & Metrics Card */}
                     <div className="stagger-card" style={{ background: 'var(--bg-surface)', border: '1px solid var(--hairline)', padding: '1.5rem' }}>
                       <span className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', letterSpacing: '0.14em', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>
                         02 / RATIONALE & METRICS
@@ -637,7 +623,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Right Column: Compact 3D Viewport + Enlarged Fixture Grid */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', position: 'sticky', top: '5rem' }}>
                 
                 <div style={{ border: '1px solid var(--hairline)', background: 'var(--bg-surface)' }}>
@@ -653,7 +638,6 @@ export default function App() {
                   <Bathroom3D width={Number(width)} depth={Number(depth)} />
                 </div>
 
-                {/* Specified Fixtures: Spacious 2x2 Grid */}
                 {result && (
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
@@ -743,9 +727,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* ---------------------------------------------------- */}
-            {/* COMMERCE-UI ARCHITECTURAL CATALOG ARCHIVE            */}
-            {/* ---------------------------------------------------- */}
             <section 
               id="catalog-section"
               style={{ borderTop: '1px solid var(--hairline)', paddingTop: '4.5rem' }}
@@ -760,7 +741,6 @@ export default function App() {
                   </h2>
                 </div>
 
-                {/* Category Filter Pills */}
                 <div style={{ display: 'flex', gap: '1px', background: 'var(--hairline)', border: '1px solid var(--hairline)' }}>
                   {CATEGORIES.map(cat => (
                     <button
@@ -785,7 +765,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 3-Column Editorial Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
                 {displayedCatalogProducts.map((product) => (
                   <div
@@ -855,7 +834,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* Spec Sheet Modal */}
             {activeSpecProduct && (
               <div 
                 onClick={() => setActiveSpecProduct(null)}
