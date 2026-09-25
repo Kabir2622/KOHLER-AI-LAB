@@ -46,16 +46,15 @@ except Exception as e:
     logger.warning(f"Redis connection failed. Running without cache: {e}")
     redis_client = None
 
-CATALOG_PATH = Path(__file__).resolve().parent.parent / "data" / "products.json"
-
 
 def load_raw_catalog():
-    """Search for products.json across common project paths safely."""
+    """Search for products.json across all possible deployment paths safely with a default fallback."""
     possible_paths = [
-        Path(__file__).resolve().parent.parent / "data" / "products.json",
         Path(__file__).resolve().parent / "data" / "products.json",
+        Path(__file__).resolve().parent.parent / "data" / "products.json",
         Path(__file__).resolve().parent / "products.json",
         Path.cwd() / "data" / "products.json",
+        Path.cwd() / "backend" / "data" / "products.json",
         Path.cwd() / "products.json",
     ]
     for p in possible_paths:
@@ -63,13 +62,20 @@ def load_raw_catalog():
             try:
                 with p.open(encoding="utf-8") as f:
                     data = json.load(f)
-                    logger.info(f"Loaded catalog from: {p}")
-                    return data
+                    logger.info(f"Loaded catalog successfully from: {p}")
+                    if isinstance(data, dict):
+                        return data
             except Exception as e:
                 logger.error(f"Found catalog at {p} but failed to read: {e}")
                 
-    logger.error(f"products.json not found in any expected location: {[str(p) for p in possible_paths]}")
-    return {"faucets": [], "toilets": [], "showers": [], "vanities": [], "bathtubs": []}
+    logger.error("products.json not found in any path. Returning safe fallback catalog.")
+    return {
+        "faucets": [],
+        "toilets": [],
+        "showers": [],
+        "vanities": [],
+        "bathtubs": []
+    }
 
 
 def constraint_filter(width_ft, depth_ft, budget, style):
@@ -220,11 +226,10 @@ def recommend():
     depth_ft = float(data.get("depth_ft", data.get("depth", 6)))
     budget = float(data.get("budget", 3000))
     style = data.get("style", "Minimalist Modern")
-    eco_mode = bool(data.get("eco_mode", False))  # Capture Eco Mode flag from frontend
+    eco_mode = bool(data.get("eco_mode", False))
 
     logger.info(f"Incoming baseline recommendation request: {width_ft}x{depth_ft}ft, Budget: ${budget}, Style: '{style}', EcoMode: {eco_mode}")
 
-    # --- REDIS CACHE CHECK ---
     cache_key = f"rec:{width_ft}:{depth_ft}:{budget}:{style.lower()}:eco_{eco_mode}"
     if redis_client:
         try:
@@ -266,7 +271,6 @@ def recommend():
         if total_calc > 0:
             result["total_price"] = total_calc
 
-    # --- SAVE TO REDIS CACHE (24 Hours) ---
     if redis_client:
         try:
             redis_client.setex(cache_key, 86400, json.dumps(result))
@@ -303,7 +307,6 @@ def refine_design():
 
     logger.info(f"Copilot refinement directive received: '{directive}'")
 
-    # --- REDIS CACHE CHECK FOR REFINEMENTS ---
     directive_cache_key = f"refine:{width_ft}:{depth_ft}:{budget}:{style.lower()}:{directive.lower()}"
     if redis_client:
         try:
@@ -329,7 +332,6 @@ def refine_design():
         elif is_highest:
             filtered_candidates[cat].sort(key=lambda x: x.get("price", 0), reverse=True)
 
-    # --- TOKEN PRUNING APPLIED HERE ---
     catalog_summary = prune_catalog_context(filtered_candidates)
 
     refinement_prompt = f"""
@@ -366,9 +368,7 @@ RULES:
             raise ValueError("GEMINI_API_KEY not configured.")
         genai.configure(api_key=api_key)
         
-        # Using cost-efficient, high-performance model
         model = genai.GenerativeModel("gemini-2.5-flash")
-
         response = model.generate_content(
             refinement_prompt,
             generation_config={"response_mime_type": "application/json"}
@@ -379,7 +379,6 @@ RULES:
         custom_tier["detailed_bundle"] = detailed
         custom_tier["total_price"] = total_calc
 
-        # --- SAVE REFINEMENT TO REDIS CACHE ---
         if redis_client:
             try:
                 redis_client.setex(directive_cache_key, 86400, json.dumps(custom_tier))
@@ -404,11 +403,11 @@ RULES:
 
         detailed, total_calc = hydrate_bundle_items(fallback_bundle, raw_catalog)
         fallback_tier = {
-            "title": f"Copilot Custom Suite",
+            "title": "Copilot Custom Suite",
             "bundle": fallback_bundle,
             "detailed_bundle": detailed,
             "total_price": total_calc,
-            "explanation": f"Adaptive specification synthesized for directive: \"{directive}\". Fixtures re-selected based on valuation parameters and spatial clearance."
+            "explanation": f"Adaptive specification synthesized for directive: \"{directive}\"."
         }
         return jsonify(fallback_tier)
 
