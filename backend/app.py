@@ -25,6 +25,17 @@ load_dotenv(dotenv_path=env_path, override=True)
 from recommender import get_llm_recommendation
 
 app = Flask(__name__)
+
+# --- GLOBAL CORS PREFLIGHT FIX ---
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "ok"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        return response, 200
+
 # Enable CORS across all routes
 CORS(app, resources={r"/*": {"origins": "*"}})
 
