@@ -6,6 +6,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import redis
 
 # Configure logging format
 logging.basicConfig(
@@ -24,6 +27,23 @@ from recommender import get_llm_recommendation
 app = Flask(__name__)
 # Enable CORS across all routes
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Initialize Rate Limiter (Protects token usage from spam/abuse)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+# Initialize Redis Client for Token Caching
+try:
+    redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+    redis_client.ping()
+    logger.info("Successfully connected to Redis cache.")
+except Exception as e:
+    logger.warning(f"Redis connection failed. Running without cache: {e}")
+    redis_client = None
 
 CATALOG_PATH = Path(__file__).resolve().parent.parent / "data" / "products.json"
 
@@ -123,7 +143,6 @@ def hydrate_bundle_items(bundle_dict, catalog):
         matched = next((p for p in catalog.get(cat_key, []) if p.get("id") == product_id), None)
 
         if matched:
-            # Ensure a copy is used so we don't mutate global cache, and enforce local image_url lookup
             item_copy = dict(matched)
             if not item_copy.get("image_url"):
                 item_copy["image_url"] = f"/images/{category_singular}1.png"
@@ -169,6 +188,7 @@ def get_full_catalog():
 
 @app.route("/recommend", methods=["POST"])
 @app.route("/api/recommend", methods=["POST"])
+@limiter.limit("5 per minute")  # Rate limit AI requests to protect tokens
 def recommend():
     start_time = time.time()
     data = request.get_json() or {}
@@ -179,6 +199,17 @@ def recommend():
     style = data.get("style", "Minimalist Modern")
 
     logger.info(f"Incoming baseline recommendation request: {width_ft}x{depth_ft}ft, Budget: ${budget}, Style: '{style}'")
+
+    # --- REDIS CACHE CHECK ---
+    cache_key = f"rec:{width_ft}:{depth_ft}:{budget}:{style.lower()}"
+    if redis_client:
+        try:
+            cached_res = redis_client.get(cache_key)
+            if cached_res:
+                logger.info("Cache hit! Serving recommendation instantly from Redis (0 tokens used).")
+                return jsonify(json.loads(cached_res))
+        except Exception as ce:
+            logger.warning(f"Redis get error: {ce}")
 
     # Allow headroom up to 1.5x target budget so luxury bathtubs & smart suites have candidates
     candidate_budget_ceiling = budget * 1.5
@@ -202,18 +233,23 @@ def recommend():
             if total_calc > 0:
                 tier_data["total_price"] = total_calc
 
-        # Expose active/curated tier at root level for backwards compatibility
         default_tier = result["tiers"].get("curated") or result["tiers"].get("essential") or next(iter(result["tiers"].values()))
         result["bundle"] = default_tier.get("bundle", {})
         result["detailed_bundle"] = default_tier.get("detailed_bundle", {})
         result["total_price"] = default_tier.get("total_price", 0)
         result["explanation"] = default_tier.get("explanation", "")
     else:
-        # Single bundle fallback hydration
         detailed, total_calc = hydrate_bundle_items(result.get("bundle", {}), catalog)
         result["detailed_bundle"] = detailed
         if total_calc > 0:
             result["total_price"] = total_calc
+
+    # --- SAVE TO REDIS CACHE (24 Hours) ---
+    if redis_client:
+        try:
+            redis_client.setex(cache_key, 86400, json.dumps(result))
+        except Exception as se:
+            logger.warning(f"Redis set error: {se}")
 
     elapsed = round(time.time() - start_time, 2)
     logger.info(f"Recommendation finished in {elapsed}s. Primary valuation: ${result.get('total_price')}")
@@ -224,6 +260,7 @@ def recommend():
 # --- IN-STUDIO CONVERSATIONAL COPILOT REVISION ENDPOINT ---
 @app.route("/refine", methods=["POST", "OPTIONS"])
 @app.route("/api/refine", methods=["POST", "OPTIONS"])
+@limiter.limit("5 per minute")  # Rate limit AI refinement requests
 def refine_design():
     """Takes the current active bundle + user's architectural revision directive and generates an adapted custom tier."""
     if request.method == "OPTIONS":
@@ -244,25 +281,32 @@ def refine_design():
 
     logger.info(f"Copilot refinement directive received: '{directive}'")
 
+    # --- REDIS CACHE CHECK FOR REFINEMENTS ---
+    directive_cache_key = f"refine:{width_ft}:{depth_ft}:{budget}:{style.lower()}:{directive.lower()}"
+    if redis_client:
+        try:
+            cached_refine = redis_client.get(directive_cache_key)
+            if cached_refine:
+                logger.info("Cache hit! Serving refinement instantly from Redis (0 tokens used).")
+                return jsonify(json.loads(cached_refine))
+        except Exception as ce:
+            logger.warning(f"Redis refinement get error: {ce}")
+
     raw_catalog = load_raw_catalog()
     directive_lower = directive.lower()
 
-    # Detect price extremes in directive
     is_lowest = any(k in directive_lower for k in ["lowest", "cheapest", "minimum", "budget", "economy", "affordable"])
     is_highest = any(k in directive_lower for k in ["highest", "maximum", "luxury", "expensive", "premium", "most expensive"])
 
-    # Expand budget boundary if asking for highest luxury tier
     effective_budget = budget * 3.5 if is_highest else budget
     filtered_candidates = constraint_filter(width_ft, depth_ft, effective_budget, style)
 
-    # Sort each category candidate pool by price to steer Gemini and algorithmic fallbacks
     for cat in filtered_candidates:
         if is_lowest:
             filtered_candidates[cat].sort(key=lambda x: x.get("price", 0))
         elif is_highest:
             filtered_candidates[cat].sort(key=lambda x: x.get("price", 0), reverse=True)
 
-    # Build structured catalog choices with prices visible
     catalog_summary = {}
     for cat, items in filtered_candidates.items():
         catalog_summary[cat] = [
@@ -325,10 +369,16 @@ Return ONLY valid JSON:
         )
         custom_tier = json.loads(response.text)
 
-        # Hydrate bundle
         detailed, total_calc = hydrate_bundle_items(custom_tier.get("bundle", {}), raw_catalog)
         custom_tier["detailed_bundle"] = detailed
         custom_tier["total_price"] = total_calc
+
+        # --- SAVE REFINEMENT TO REDIS CACHE ---
+        if redis_client:
+            try:
+                redis_client.setex(directive_cache_key, 86400, json.dumps(custom_tier))
+            except Exception as se:
+                logger.warning(f"Redis refinement set error: {se}")
 
         elapsed = round(time.time() - start_time, 2)
         logger.info(f"Copilot refinement completed via Gemini in {elapsed}s: ${custom_tier['total_price']}")
@@ -337,7 +387,6 @@ Return ONLY valid JSON:
     except Exception as e:
         logger.error(f"Gemini refinement failed or threw exception: {e}. Executing algorithmic directive fallback.")
 
-        # Algorithmic fallback: directly select lowest or highest candidate per category
         fallback_bundle = {}
         for cat in ["faucet", "toilet", "shower", "vanity", "bathtub"]:
             cat_key = f"{cat}s"
