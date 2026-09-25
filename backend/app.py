@@ -100,6 +100,25 @@ def constraint_filter(width_ft, depth_ft, budget, style):
     return filtered_catalog
 
 
+def prune_catalog_context(filtered_candidates):
+    """Token Pruning Utility: Strips out verbose descriptions, heavy metadata, 
+       and unnecessary keys to minimize input token count before sending to Gemini.
+    """
+    pruned_summary = {}
+    for cat, items in filtered_candidates.items():
+        pruned_summary[cat] = [
+            {
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "price": p.get("price"),
+                "finish": p.get("finish"),
+                "flow_rate": p.get("flow_rate")
+            }
+            for p in items
+        ]
+    return pruned_summary
+
+
 def hydrate_bundle_items(bundle_dict, catalog):
     """Map product IDs to full catalog objects, ensuring local catalog image_url mapping."""
     detailed = {}
@@ -197,11 +216,12 @@ def recommend():
     depth_ft = float(data.get("depth_ft", data.get("depth", 6)))
     budget = float(data.get("budget", 3000))
     style = data.get("style", "Minimalist Modern")
+    eco_mode = bool(data.get("eco_mode", False))  # Capture Eco Mode flag from frontend[cite: 10]
 
-    logger.info(f"Incoming baseline recommendation request: {width_ft}x{depth_ft}ft, Budget: ${budget}, Style: '{style}'")
+    logger.info(f"Incoming baseline recommendation request: {width_ft}x{depth_ft}ft, Budget: ${budget}, Style: '{style}', EcoMode: {eco_mode}")
 
     # --- REDIS CACHE CHECK ---
-    cache_key = f"rec:{width_ft}:{depth_ft}:{budget}:{style.lower()}"
+    cache_key = f"rec:{width_ft}:{depth_ft}:{budget}:{style.lower()}:eco_{eco_mode}"
     if redis_client:
         try:
             cached_res = redis_client.get(cache_key)
@@ -211,12 +231,11 @@ def recommend():
         except Exception as ce:
             logger.warning(f"Redis get error: {ce}")
 
-    # Allow headroom up to 1.5x target budget so luxury bathtubs & smart suites have candidates
     candidate_budget_ceiling = budget * 1.5
     filtered_candidates = constraint_filter(width_ft, depth_ft, candidate_budget_ceiling, style)
 
     logger.info("Dispatching filtered candidates to recommendation engine...")
-    result = get_llm_recommendation(filtered_candidates, style, budget)
+    result = get_llm_recommendation(filtered_candidates, style, budget, eco_mode=eco_mode)
 
     if "error" in result:
         elapsed = round(time.time() - start_time, 2)
@@ -225,7 +244,6 @@ def recommend():
 
     catalog = load_raw_catalog()
 
-    # Hydrate Multi-Tier Structure
     if "tiers" in result:
         for tier_key, tier_data in result["tiers"].items():
             detailed, total_calc = hydrate_bundle_items(tier_data.get("bundle", {}), catalog)
@@ -262,7 +280,7 @@ def recommend():
 @app.route("/api/refine", methods=["POST", "OPTIONS"])
 @limiter.limit("5 per minute")  # Rate limit AI refinement requests
 def refine_design():
-    """Takes the current active bundle + user's architectural revision directive and generates an adapted custom tier."""
+    """Takes active bundle + revision directive, uses pruned context & fast model, returns adapted custom tier."""
     if request.method == "OPTIONS":
         return jsonify({"status": "preflight ok"}), 200
 
@@ -307,41 +325,23 @@ def refine_design():
         elif is_highest:
             filtered_candidates[cat].sort(key=lambda x: x.get("price", 0), reverse=True)
 
-    catalog_summary = {}
-    for cat, items in filtered_candidates.items():
-        catalog_summary[cat] = [
-            {
-                "id": p.get("id"),
-                "name": p.get("name"),
-                "price": p.get("price"),
-                "finish": p.get("finish"),
-                "flow_rate": p.get("flow_rate")
-            }
-            for p in items
-        ]
+    # --- TOKEN PRUNING APPLIED HERE ---
+    catalog_summary = prune_catalog_context(filtered_candidates)
 
     refinement_prompt = f"""
-You are the Kohler Principal Spatial Architect executing an iterative design revision.
-Room Dimensions: {width_ft}ft x {depth_ft}ft | Base Style: {style}
+ROLE: Kohler Spatial Architect.
+CONTEXT: Room {width_ft}x{depth_ft}ft | Style: {style} | Directive: "{directive}"
 
 PREVIOUS BUNDLE:
 {json.dumps(current_bundle)}
 
-USER REVISION DIRECTIVE (MANDATORY PRIORITY):
-"{directive}"
-
-CRITICAL INSTRUCTIONS:
-1. You MUST directly satisfy the user's directive over any previous style defaults.
-   - If the user asks for "highest value", "maximum", or "luxury": Select the most premium, highest-priced fixtures in each category.
-   - If the user asks for "lowest value", "cheapest", or "budget": Select the lowest-priced, high-durability fixtures in each category.
-   - If the user asks for finishes (e.g., Brass, Matte Black), accessibility (ADA/zero-threshold), or eco-efficiency (WaterSense/low flow), prioritize products matching those exact specifications.
-2. Select strictly ONE valid 'id' per category from the available catalog:
+PRUNED CATALOG OPTIONS:
 {json.dumps(catalog_summary)}
-3. The explanation MUST explicitly state:
-   - What changes were made from the previous bundle.
-   - How the new fixtures fulfill the exact directive "{directive}".
 
-Return ONLY valid JSON:
+RULES:
+1. Prioritize user directive strictly over style defaults.
+2. Select exactly ONE valid 'id' per category from the pruned catalog.
+3. Return ONLY raw JSON matching this schema:
 {{
   "title": "Copilot Custom Suite",
   "bundle": {{
@@ -361,6 +361,8 @@ Return ONLY valid JSON:
         if not api_key:
             raise ValueError("GEMINI_API_KEY not configured.")
         genai.configure(api_key=api_key)
+        
+        # Using cost-efficient, high-performance model
         model = genai.GenerativeModel("gemini-2.5-flash")
 
         response = model.generate_content(
