@@ -27,7 +27,7 @@ from recommender import get_llm_recommendation
 app = Flask(__name__)
 
 # --- GLOBAL CORS FIX ---
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Initialize Rate Limiter (Protects token usage from spam/abuse)
 limiter = Limiter(
