@@ -205,10 +205,13 @@ def get_full_catalog():
     return jsonify(catalog)
 
 
-@app.route("/recommend", methods=["POST"])
-@app.route("/api/recommend", methods=["POST"])
+@app.route("/recommend", methods=["POST", "OPTIONS"])
+@app.route("/api/recommend", methods=["POST", "OPTIONS"])
 @limiter.limit("5 per minute")  # Rate limit AI requests to protect tokens
 def recommend():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "preflight ok"}), 200
+
     start_time = time.time()
     data = request.get_json() or {}
 
@@ -216,7 +219,7 @@ def recommend():
     depth_ft = float(data.get("depth_ft", data.get("depth", 6)))
     budget = float(data.get("budget", 3000))
     style = data.get("style", "Minimalist Modern")
-    eco_mode = bool(data.get("eco_mode", False))  # Capture Eco Mode flag from frontend[cite: 10]
+    eco_mode = bool(data.get("eco_mode", False))  # Capture Eco Mode flag from frontend
 
     logger.info(f"Incoming baseline recommendation request: {width_ft}x{depth_ft}ft, Budget: ${budget}, Style: '{style}', EcoMode: {eco_mode}")
 
