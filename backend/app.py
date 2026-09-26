@@ -1,8 +1,15 @@
 import json
 import logging
 import os
+import sys
 import time
 from pathlib import Path
+
+# --- RENDER MODULE PATH FIX ---
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
